@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Texas Property Intel — Motivated Seller Dashboard</title>
+<meta name="description" content="Centralized property intelligence dashboard for Nueces County motivated seller leads. Stacking, scoring, comping, deal calculator, and skip-trace/GHL exports." />
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f7f5;
+  --bg-tertiary: #efeee8;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b6b66;
+  --text-tertiary: #95948e;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.18);
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --brand: #185FA5;
+  --brand-dark: #0C447C;
+  --success: #1D9E75;
+  --success-dark: #0F6E56;
+  --warning: #BA7517;
+  --danger: #A32D2D;
+  --hot: #A32D2D;
+  --warm: #BA7517;
+  --active: #639922;
+  --cold: #888780;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #252523;
+    --bg-tertiary: #2f2e2c;
+    --text-primary: #f5f5f3;
+    --text-secondary: #a8a7a1;
+    --text-tertiary: #78776f;
+    --border: rgba(255,255,255,0.1);
+    --border-strong: rgba(255,255,255,0.22);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.app { max-width: 1600px; margin: 0 auto; padding: 1.5rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 12px; }
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-mark { width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--brand); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-mark svg { stroke: white; }
+.title { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.5px; }
+.sub { font-size: 12px; color: var(--text-secondary); margin: 0; }
+.status { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; padding: 12px; background: var(--bg-primary); border-radius: var(--radius-md); border: 1px solid var(--border); }
+.btn { padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: var(--bg-primary); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--text-primary); font-family: inherit; transition: background 0.1s; }
+.btn:hover { background: var(--bg-secondary); }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--brand); color: white; border-color: var(--brand); }
+.btn-primary:hover { background: var(--brand-dark); }
+.btn-success { background: var(--success); color: white; border-color: var(--success); }
+.btn-success:hover { background: var(--success-dark); }
+.btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+.pill { padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 12px; background: var(--bg-secondary); }
+.pill-stack { background: #EEEDFE; color: #3C3489; border-color: #CECBF6; }
+@media (prefers-color-scheme: dark) {
+  .pill-stack { background: #3C3489; color: #EEEDFE; border-color: #534AB7; }
+}
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 1rem; }
+@media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat { background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; }
+.stat-label { font-size: 11px; color: var(--text-secondary); margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+.stat-value { font-size: 26px; font-weight: 600; margin: 0; }
+.toast { padding: 10px 14px; border-radius: var(--radius-md); background: #C0DD97; color: #173404; font-size: 13px; margin-bottom: 12px; display: none; }
+.toast.show { display: block; }
+.toast.err { background: #F7C1C1; color: #501313; }
+.body { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .body { grid-template-columns: 1fr; } }
+.side { display: flex; flex-direction: column; gap: 4px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; height: fit-content; }
+.side-h { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 8px 4px 4px; font-weight: 500; }
+.side-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: var(--radius-md); cursor: pointer; font-size: 13px; border: 1px solid transparent; user-select: none; }
+.side-item:hover { background: var(--bg-secondary); }
+.side-item.active { background: #E6F1FB; color: #0C447C; border-color: #B5D4F4; }
+@media (prefers-color-scheme: dark) {
+  .side-item.active { background: #042C53; color: #B5D4F4; border-color: #185FA5; }
+}
+.side-count { font-size: 11px; color: var(--text-secondary); }
+.side-item.active .side-count { color: inherit; opacity: 0.8; }
+.main { min-width: 0; }
+.typebar { display: flex; gap: 14px; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; flex-wrap: wrap; font-size: 12px; }
+.typeitem { display: flex; align-items: center; gap: 6px; }
+.typeitem-dot { width: 8px; height: 8px; border-radius: 50%; }
+.controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+.search, .select { padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); font-size: 13px; background: var(--bg-primary); color: var(--text-primary); font-family: inherit; }
+.search { flex: 1; min-width: 200px; }
+.rowcount { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+.tablewrap { background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1100px; }
+.table th { text-align: left; padding: 10px 12px; background: var(--bg-secondary); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; }
+.table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: var(--bg-secondary); }
+.score { display: inline-block; padding: 4px 10px; border-radius: var(--radius-md); font-weight: 600; font-size: 12px; min-width: 36px; text-align: center; color: white; }
+.score-hot { background: var(--hot); }
+.score-warm { background: var(--warm); }
+.score-active { background: var(--active); }
+.score-cold { background: var(--cold); }
+.typetag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--radius-md); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.flags { display: flex; flex-direction: column; gap: 3px; }
+.flag { display: inline-block; padding: 2px 7px; border-radius: var(--radius-md); font-size: 10px; font-weight: 500; }
+.flag-info { background: #E6F1FB; color: #0C447C; }
+.flag-amber { background: #FAEEDA; color: #633806; }
+.flag-stack { background: #EEEDFE; color: #3C3489; font-weight: 600; }
+.flag-pink { background: #FBEAF0; color: #72243E; }
+.flag-teal { background: #E1F5EE; color: #085041; }
+@media (prefers-color-scheme: dark) {
+  .flag-info { background: #042C53; color: #B5D4F4; }
+  .flag-amber { background: #412402; color: #FAC775; }
+  .flag-stack { background: #3C3489; color: #CECBF6; }
+  .flag-pink { background: #4B1528; color: #F4C0D1; }
+  .flag-teal { background: #04342C; color: #9FE1CB; }
+}
+.doclink { color: var(--brand); text-decoration: none; font-size: 11px; cursor: pointer; }
+.doclink:hover { text-decoration: underline; }
+.pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 12px; flex-wrap: wrap; gap: 8px; }
+.pagebtns { display: flex; gap: 4px; flex-wrap: wrap; }
+.pagebtn { padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: var(--bg-primary); cursor: pointer; font-size: 12px; min-width: 28px; color: var(--text-primary); font-family: inherit; }
+.pagebtn:hover:not(:disabled) { background: var(--bg-secondary); }
+.pagebtn.active { background: var(--brand); color: white; border-color: var(--brand); }
+.pagebtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: flex-start; justify-content: center; padding: 2rem 1rem; z-index: 100; overflow-y: auto; }
+.modal-bg.open { display: flex; }
+.modal { background: var(--bg-primary); border-radius: var(--radius-lg); padding: 1.5rem; width: 100%; max-width: 640px; max-height: calc(100vh - 4rem); overflow-y: auto; }
+.modal-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.modal-title { font-size: 18px; font-weight: 600; margin: 0; }
+.close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); padding: 0 8px; font-family: inherit; line-height: 1; }
+.close:hover { color: var(--text-primary); }
+.formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+@media (max-width: 500px) { .formgrid { grid-template-columns: 1fr; } }
+.field label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+.field input, .field select, .field textarea { width: 100%; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); font-size: 13px; background: var(--bg-primary); color: var(--text-primary); font-family: inherit; }
+.field textarea { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.results { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 1rem; }
+.result-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.result-row.big { font-size: 16px; font-weight: 600; padding: 10px 0; border-top: 1px solid var(--border); margin-top: 4px; }
+.comprow { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 28px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.comprow input { padding: 6px 8px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); font-size: 12px; background: var(--bg-primary); color: var(--text-primary); font-family: inherit; }
+.comp-x { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 18px; padding: 0; font-family: inherit; }
+.comp-x:hover { color: var(--danger); }
+.portals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 600px) { .portals { grid-template-columns: 1fr; } }
+.portal { padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-md); font-size: 12px; }
+.portal-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px; }
+.portal-name { font-weight: 600; }
+.portal-status { font-size: 10px; padding: 2px 6px; border-radius: var(--radius-md); font-weight: 600; }
+.portal-auto { background: #C0DD97; color: #173404; }
+.portal-semi { background: #FAC775; color: #412402; }
+.portal-manual { background: #F7C1C1; color: #501313; }
+.portal a { color: var(--brand); text-decoration: none; font-size: 11px; }
+.portal a:hover { text-decoration: underline; }
+.empty { padding: 3rem 1rem; text-align: center; color: var(--text-secondary); font-size: 13px; }
+.empty button { margin-top: 12px; }
+.pia-template { margin-top: 1rem; padding: 12px; background: #FAEEDA; border-radius: var(--radius-md); font-size: 12px; color: #633806; }
+@media (prefers-color-scheme: dark) {
+  .pia-template { background: #412402; color: #FAC775; }
+}
+.spacer-fill { flex: 1; }
+.kbd { font-family: ui-monospace, "SF Mono", monospace; font-size: 11px; padding: 1px 6px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 4px; }
+.footer { margin-top: 2rem; padding: 1rem; text-align: center; font-size: 11px; color: var(--text-tertiary); }
+.footer a { color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="app">
+<h2 class="sr-only">Texas Property Intel — motivated seller lead dashboard with scoring, comps, deal calculator, and CSV exports.</h2>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+    </div>
+    <div>
+      <p class="title">TEXAS PROPERTY INTEL</p>
+      <p class="sub">Motivated Seller Intelligence — Nueces County</p>
+    </div>
+  </div>
+  <div class="status">
+    <span style="font-size: 12px; color: var(--text-secondary);">Updated <span id="updated">—</span></span>
+    <span class="dot"></span>
+    <button class="btn btn-primary" onclick="App.exportCSV('ghl')">↓ GHL CSV</button>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn btn-primary" onclick="App.openModal('calc')">⌘ Calculator</button>
+  <button class="btn" onclick="App.openModal('comp')">⊞ Comp Tool</button>
+  <button class="btn" onclick="App.openModal('import')">↑ Import CSV</button>
+  <button class="btn" onclick="App.exportCSV('skip')">↓ Skip Trace CSV</button>
+  <button class="btn" onclick="App.exportCSV('ghl')">↓ GHL CSV</button>
+  <button class="btn" onclick="App.exportCSV('all')">↓ Full Backup</button>
+  <button class="btn" onclick="App.openModal('portals')">◎ Portals</button>
+  <button class="btn" onclick="App.openModal('settings')">⚙ Settings</button>
+  <span class="spacer-fill"></span>
+  <span class="pill" id="pill-count">TAX: 0 imported</span>
+  <span class="pill pill-stack" id="pill-stack">0 STACKED</span>
+</div>
+
+<div class="stats">
+  <div class="stat"><p class="stat-label">Total Records</p><p class="stat-value" id="stat-total">0</p></div>
+  <div class="stat"><p class="stat-label">Hot Leads (≥70)</p><p class="stat-value" style="color: var(--hot);" id="stat-hot">0</p></div>
+  <div class="stat"><p class="stat-label">Warm Leads (50-69)</p><p class="stat-value" style="color: var(--warm);" id="stat-warm">0</p></div>
+  <div class="stat"><p class="stat-label">With Address</p><p class="stat-value" style="color: var(--success);" id="stat-addr">0</p></div>
+  <div class="stat"><p class="stat-label">Date Range</p><p class="stat-value" style="font-size: 14px;" id="stat-range">—</p></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="body">
+  <aside class="side">
+    <div class="side-h">Lead Types</div>
+    <div class="side-item active" data-type="all" onclick="App.filter('type','all')"><span>All</span><span class="side-count" id="c-all">0</span></div>
+    <div class="side-item" data-type="lis_pendens" onclick="App.filter('type','lis_pendens')"><span>⚖ Lis Pendens</span><span class="side-count" id="c-lis_pendens">0</span></div>
+    <div class="side-item" data-type="foreclosure" onclick="App.filter('type','foreclosure')"><span>⚠ Foreclosure</span><span class="side-count" id="c-foreclosure">0</span></div>
+    <div class="side-item" data-type="tax" onclick="App.filter('type','tax')"><span>$ Tax Delinquent</span><span class="side-count" id="c-tax">0</span></div>
+    <div class="side-item" data-type="judgment" onclick="App.filter('type','judgment')"><span>§ Judgment</span><span class="side-count" id="c-judgment">0</span></div>
+    <div class="side-item" data-type="lien" onclick="App.filter('type','lien')"><span>⚭ Lien</span><span class="side-count" id="c-lien">0</span></div>
+    <div class="side-item" data-type="probate" onclick="App.filter('type','probate')"><span>♰ Probate</span><span class="side-count" id="c-probate">0</span></div>
+    <div class="side-item" data-type="code" onclick="App.filter('type','code')"><span>⚐ Code Viol.</span><span class="side-count" id="c-code">0</span></div>
+    <div class="side-item" data-type="absentee" onclick="App.filter('type','absentee')"><span>↗ Absentee</span><span class="side-count" id="c-absentee">0</span></div>
+
+    <div class="side-h" style="margin-top: 1rem;">Score Filters</div>
+    <div class="side-item active" data-score="all" onclick="App.filter('score','all')"><span>★ All Scores</span><span class="side-count" id="s-all">0</span></div>
+    <div class="side-item" data-score="hot" onclick="App.filter('score','hot')"><span style="color: var(--hot);">▲ Hot (≥70)</span><span class="side-count" id="s-hot">0</span></div>
+    <div class="side-item" data-score="warm" onclick="App.filter('score','warm')"><span style="color: var(--warm);">● Warm (≥50)</span><span class="side-count" id="s-warm">0</span></div>
+    <div class="side-item" data-score="active" onclick="App.filter('score','active')"><span style="color: var(--active);">◆ Active (≥30)</span><span class="side-count" id="s-active">0</span></div>
+  </aside>
+
+  <main class="main">
+    <div class="typebar" id="typebar"></div>
+
+    <div class="controls">
+      <input type="text" class="search" id="search" placeholder="Search owner, address, doc number, legal..." />
+      <select class="select" id="sort">
+        <option value="score-desc">Score: High → Low</option>
+        <option value="score-asc">Score: Low → High</option>
+        <option value="date-desc">Date: Newest</option>
+        <option value="date-asc">Date: Oldest</option>
+        <option value="amount-desc">Amount: High → Low</option>
+      </select>
+    </div>
+
+    <div class="rowcount" id="rowcount">No records yet</div>
+    <div class="tablewrap">
+      <table class="table">
+        <thead>
+          <tr><th>Score</th><th>Type</th><th>Doc</th><th>Filed</th><th>Owner / Grantor</th><th>Property Address</th><th>Mailing Address</th><th>Amount</th><th>Flags</th><th>Doc Link</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <div>Rows per page: <select class="select" id="pagesize" style="margin-left: 6px;"><option>25</option><option>50</option><option>100</option></select></div>
+      <div class="pagebtns" id="pagebtns"></div>
+    </div>
+  </main>
+</div>
+
+<div class="footer">
+  Texas Property Intel · Data stored locally in your browser · <a href="#" onclick="App.openModal('about'); return false;">About / How it works</a>
+</div>
+</div>
+
+<div class="modal-bg" id="modal" onclick="if(event.target===this) App.closeModal()">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+const App = (function() {
+  const STORAGE_KEY = 'tpi:leads:v1';
+  const SETTINGS_KEY = 'tpi:settings:v1';
+
+  let STATE = {
+    leads: [],
+    filterType: 'all',
+    filterScore: 'all',
+    page: 1,
+    settings: { strategy: 'mixed', defaultMarket: 'CORPUS CHRISTI' }
+  };
+
+  const SAMPLE = [
+    { id:'s1', type:'lis_pendens', doc:'L/P', doc_number:'#RP-2026-130091', filed:'2026-04-07', owner:'GREENWOOD FOREST HOMEOWNERS ASSOC', prop_addr:'6303 BALLARD BROOK', prop_city:'CORPUS CHRISTI', prop_zip:'78414', mail_addr:'P.O. BOX 2348', mail_city:'CORPUS CHRISTI', mail_zip:'78403', amount:6516, est_value:185000, flags:['New this week','Tax delinquent','STACKED'] },
+    { id:'s2', type:'lis_pendens', doc:'L/P', doc_number:'#RP-2026-130092', filed:'2026-04-07', owner:'GHANI MUSAB ABDUL', prop_addr:'6303 BALLARD BROOK', prop_city:'CORPUS CHRISTI', prop_zip:'78414', mail_addr:'4222 HOUGH RD', mail_city:'HOUSTON', mail_zip:'77084', amount:1221, est_value:185000, flags:['LLC / corp owner','New this week','Tax delinquent','STACKED'] },
+    { id:'s3', type:'lis_pendens', doc:'L/P', doc_number:'#RP-2026-124577', filed:'2026-04-01', owner:'KELLY LELAND HANNAH', prop_addr:'5922 OLD LODGE DR', prop_city:'CORPUS CHRISTI', prop_zip:'78413', mail_addr:'5922 OLD LODGE DR', mail_city:'CORPUS CHRISTI', mail_zip:'78413', amount:9015, est_value:215000, flags:['New this week','Tax delinquent','STACKED'] },
+    { id:'s4', type:'foreclosure', doc:'NTS', doc_number:'#RP-2026-118203', filed:'2026-03-28', owner:'MARTINEZ ROBERTO J', prop_addr:'4521 EVERHART RD', prop_city:'CORPUS CHRISTI', prop_zip:'78411', mail_addr:'4521 EVERHART RD', mail_city:'CORPUS CHRISTI', mail_zip:'78411', amount:142500, est_value:165000, flags:['Auction soon','Owner-occupied'] },
+    { id:'s5', type:'tax', doc:'TAX', doc_number:'TX-2025-44892', filed:'2026-02-15', owner:'JOHNSON ESTATE OF MARY', prop_addr:'2818 SARITA ST', prop_city:'CORPUS CHRISTI', prop_zip:'78415', mail_addr:'2818 SARITA ST', mail_city:'CORPUS CHRISTI', mail_zip:'78415', amount:8750, est_value:95000, flags:['3+ years delinquent','Probate likely','High equity'] },
+    { id:'s6', type:'probate', doc:'PROB', doc_number:'PR-2026-00412', filed:'2026-03-12', owner:'WILLIAMS DECEASED ROBERT', prop_addr:'1244 CHAMBERLAIN ST', prop_city:'CORPUS CHRISTI', prop_zip:'78404', mail_addr:'7822 OAK MEADOW LN', mail_city:'AUSTIN', mail_zip:'78759', amount:0, est_value:128000, flags:['Out-of-state heir','Free & clear'] },
+    { id:'s7', type:'code', doc:'CV', doc_number:'CE-2026-7741', filed:'2026-04-02', owner:'SMITH ENTERPRISES LLC', prop_addr:'3315 LEOPARD ST', prop_city:'CORPUS CHRISTI', prop_zip:'78408', mail_addr:'P.O. BOX 9981', mail_city:'CORPUS CHRISTI', mail_zip:'78469', amount:2400, est_value:78000, flags:['LLC / corp owner','Repeat violation','Vacant'] },
+    { id:'s8', type:'absentee', doc:'CAD', doc_number:'CAD-189442', filed:'2026-01-10', owner:'GARCIA MIGUEL & SOFIA', prop_addr:'4408 BAR LE DOC DR', prop_city:'CORPUS CHRISTI', prop_zip:'78413', mail_addr:'2211 ELM ST APT 4', mail_city:'DALLAS', mail_zip:'75201', amount:0, est_value:175000, flags:['Out-of-state','High equity'] }
+  ];
+
+  const TYPE_META = {
+    lis_pendens: { label:'LIS PENDENS', color:'#A32D2D', bg:'#FCEBEB' },
+    foreclosure: { label:'FORECLOSURE', color:'#BA7517', bg:'#FAEEDA' },
+    tax: { label:'TAX DELINQ', color:'#854F0B', bg:'#FAC775' },
+    judgment: { label:'JUDGMENT', color:'#3C3489', bg:'#EEEDFE' },
+    lien: { label:'LIEN', color:'#0C447C', bg:'#E6F1FB' },
+    probate: { label:'PROBATE', color:'#085041', bg:'#E1F5EE' },
+    code: { label:'CODE VIOL', color:'#72243E', bg:'#FBEAF0' },
+    absentee: { label:'ABSENTEE', color:'#444441', bg:'#F1EFE8' }
+  };
+
+  function calcScore(L) {
+    let s = 10;
+    const t = L.type;
+    if (t === 'foreclosure') s += 35;
+    else if (t === 'tax') s += 30;
+    else if (t === 'probate') s += 32;
+    else if (t === 'lis_pendens') s += 25;
+    else if (t === 'code') s += 28;
+    else if (t === 'judgment') s += 22;
+    else if (t === 'lien') s += 18;
+    else if (t === 'absentee') s += 15;
+    const f = (L.flags || []).map(x => x.toLowerCase());
+    if (f.some(x => x.includes('stack'))) s += 15;
+    if (f.some(x => x.includes('out-of-state') || x.includes('out of state'))) s += 8;
+    if (f.some(x => x.includes('high equity') || x.includes('free & clear') || x.includes('free and clear'))) s += 12;
+    if (f.some(x => x.includes('vacant'))) s += 10;
+    if (f.some(x => x.includes('probate'))) s += 8;
+    if (f.some(x => x.includes('tax delinquent'))) s += 8;
+    if (f.some(x => x.includes('repeat'))) s += 6;
+    if (f.some(x => x.includes('auction'))) s += 8;
+    if (f.some(x => x.includes('llc') || x.includes('corp'))) s += 4;
+    if (L.prop_addr && L.mail_addr && L.prop_addr.trim().toLowerCase() !== L.mail_addr.trim().toLowerCase()) s += 6;
+    if (L.est_value && L.amount && L.amount / L.est_value < 0.3) s += 5;
+    return Math.min(100, Math.max(0, Math.round(s)));
+  }
+
+  function scoreBucket(s) {
+    if (s >= 70) return 'hot';
+    if (s >= 50) return 'warm';
+    if (s >= 30) return 'active';
+    return 'cold';
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      STATE.leads = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.error('Load error:', e);
+      STATE.leads = [];
+    }
+    try {
+      const s = localStorage.getItem(SETTINGS_KEY);
+      if (s) STATE.settings = Object.assign(STATE.settings, JSON.parse(s));
+    } catch (e) {}
+    if (!STATE.leads.length) {
+      STATE.leads = SAMPLE.map(L => ({ ...L, score: calcScore(L) }));
+    }
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE.leads));
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(STATE.settings));
+    } catch (e) {
+      toast('Save failed — localStorage may be full', 'err');
+    }
+  }
+
+  function getFiltered() {
+    const q = (document.getElementById('search').value || '').toLowerCase();
+    let out = STATE.leads.slice();
+    if (STATE.filterType !== 'all') out = out.filter(L => L.type === STATE.filterType);
+    if (STATE.filterScore === 'hot') out = out.filter(L => L.score >= 70);
+    else if (STATE.filterScore === 'warm') out = out.filter(L => L.score >= 50);
+    else if (STATE.filterScore === 'active') out = out.filter(L => L.score >= 30);
+    if (q) out = out.filter(L => JSON.stringify(L).toLowerCase().includes(q));
+    const sort = document.getElementById('sort').value;
+    out.sort((a, b) => {
+      if (sort === 'score-desc') return b.score - a.score;
+      if (sort === 'score-asc') return a.score - b.score;
+      if (sort === 'date-desc') return (b.filed || '').localeCompare(a.filed || '');
+      if (sort === 'date-asc') return (a.filed || '').localeCompare(b.filed || '');
+      if (sort === 'amount-desc') return (b.amount || 0) - (a.amount || 0);
+      return 0;
+    });
+    return out;
+  }
+
+  function renderStats() {
+    const all = STATE.leads;
+    document.getElementById('stat-total').textContent = all.length.toLocaleString();
+    document.getElementById('stat-hot').textContent = all.filter(L => L.score >= 70).length.toLocaleString();
+    document.getElementById('stat-warm').textContent = all.filter(L => L.score >= 50 && L.score < 70).length.toLocaleString();
+    document.getElementById('stat-addr').textContent = all.filter(L => L.prop_addr && L.prop_addr.trim()).length.toLocaleString();
+    const dates = all.map(L => L.filed).filter(Boolean).sort();
+    document.getElementById('stat-range').textContent = dates.length ? (dates[0].replace(/-/g, '/') + ' →') : '—';
+    const types = ['lis_pendens', 'foreclosure', 'tax', 'judgment', 'lien', 'probate', 'code', 'absentee'];
+    types.forEach(t => {
+      const el = document.getElementById('c-' + t);
+      if (el) el.textContent = all.filter(L => L.type === t).length.toLocaleString();
+    });
+    document.getElementById('c-all').textContent = all.length.toLocaleString();
+    document.getElementById('s-all').textContent = all.length.toLocaleString();
+    document.getElementById('s-hot').textContent = all.filter(L => L.score >= 70).length.toLocaleString();
+    document.getElementById('s-warm').textContent = all.filter(L => L.score >= 50).length.toLocaleString();
+    document.getElementById('s-active').textContent = all.filter(L => L.score >= 30).length.toLocaleString();
+    const stacked = all.filter(L => (L.flags || []).some(f => f.toLowerCase().includes('stack'))).length;
+    document.getElementById('pill-stack').textContent = stacked + ' STACKED';
+    document.getElementById('pill-count').textContent = 'TAX: ' + all.filter(L => L.type === 'tax').length.toLocaleString() + ' imported';
+    const tb = document.getElementById('typebar');
+    tb.innerHTML = types.map(t => {
+      const meta = TYPE_META[t];
+      const n = all.filter(L => L.type === t).length;
+      return '<div class="typeitem"><span class="typeitem-dot" style="background:' + meta.color + '"></span>' + meta.label.toLowerCase() + ' <strong>' + n.toLocaleString() + '</strong></div>';
+    }).join('');
+    const now = new Date();
+    document.getElementById('updated').textContent = now.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  function portalLink(L) {
+    if (L.type === 'tax' || L.type === 'absentee') return 'https://nuecescad.net/Search/';
+    if (L.type === 'lis_pendens' || L.type === 'foreclosure' || L.type === 'lien' || L.type === 'judgment') return 'https://nueces.tx.publicsearch.us/';
+    if (L.type === 'probate') return 'https://nuecesrecords.org/';
+    if (L.type === 'code') return 'https://www.cctexas.com/departments/code-enforcement';
+    return 'https://nueces.tx.publicsearch.us/';
+  }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  }
+
+  function renderTable() {
+    const filtered = getFiltered();
+    const size = parseInt(document.getElementById('pagesize').value, 10);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+    if (STATE.page > totalPages) STATE.page = 1;
+    const start = (STATE.page - 1) * size;
+    const slice = filtered.slice(start, start + size);
+    document.getElementById('rowcount').textContent = 'Showing ' + slice.length + ' of ' + filtered.length.toLocaleString() + ' records';
+    const tbody = document.getElementById('tbody');
+    if (!slice.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="empty">No matching records.<br/><button class="btn btn-primary" onclick="App.openModal(\'import\')" style="margin-top:8px;">Import data</button></td></tr>';
+    } else {
+      tbody.innerHTML = slice.map(L => {
+        const meta = TYPE_META[L.type] || TYPE_META.lien;
+        const flags = (L.flags || []).map(f => {
+          const lower = f.toLowerCase();
+          let cls = 'flag-info';
+          if (lower.includes('stack')) cls = 'flag-stack';
+          else if (lower.includes('tax') || lower.includes('delinq')) cls = 'flag-amber';
+          else if (lower.includes('llc') || lower.includes('corp')) cls = 'flag-pink';
+          else if (lower.includes('equity') || lower.includes('free')) cls = 'flag-teal';
+          return '<span class="flag ' + cls + '">' + escapeHtml(f) + '</span>';
+        }).join('');
+        const propAddr = L.prop_addr
+          ? escapeHtml(L.prop_addr) + '<br/><span style="color: var(--text-secondary); font-size: 11px;">' + escapeHtml(L.prop_city || '') + ', TX ' + escapeHtml(L.prop_zip || '') + '</span>'
+          : '<span style="color: var(--text-secondary);">—</span>';
+        const mailAddr = L.mail_addr
+          ? escapeHtml(L.mail_addr) + '<br/><span style="color: var(--text-secondary); font-size: 11px;">' + escapeHtml(L.mail_city || '') + ', TX ' + escapeHtml(L.mail_zip || '') + '</span>'
+          : '<span style="color: var(--text-secondary);">—</span>';
+        const docHref = portalLink(L);
+        return '<tr>'
+          + '<td><span class="score score-' + scoreBucket(L.score) + '">' + L.score + '</span></td>'
+          + '<td><span class="typetag" style="background:' + meta.bg + ';color:' + meta.color + ';">' + meta.label + '</span></td>'
+          + '<td>' + escapeHtml(L.doc) + '</td>'
+          + '<td>' + escapeHtml(L.filed || '') + '</td>'
+          + '<td><strong>' + escapeHtml(L.owner || '') + '</strong></td>'
+          + '<td>' + propAddr + '</td>'
+          + '<td>' + mailAddr + '</td>'
+          + '<td>' + (L.amount ? '$' + L.amount.toLocaleString() : '—') + '</td>'
+          + '<td><div class="flags">' + flags + '</div></td>'
+          + '<td><a class="doclink" href="' + docHref + '" target="_blank" rel="noopener">' + escapeHtml(L.doc_number || 'OPEN') + ' ↗</a></td>'
+          + '</tr>';
+      }).join('');
+    }
+    const pb = document.getElementById('pagebtns');
+    let btns = '<button class="pagebtn" ' + (STATE.page <= 1 ? 'disabled' : '') + ' onclick="App.page(' + (STATE.page - 1) + ')">‹</button>';
+    const max = Math.min(totalPages, 5);
+    for (let i = 1; i <= max; i++) btns += '<button class="pagebtn ' + (STATE.page === i ? 'active' : '') + '" onclick="App.page(' + i + ')">' + i + '</button>';
+    if (totalPages > 5) btns += '<span style="padding:4px 6px;color:var(--text-secondary);">…</span><button class="pagebtn" onclick="App.page(' + totalPages + ')">' + totalPages + '</button>';
+    btns += '<button class="pagebtn" ' + (STATE.page >= totalPages ? 'disabled' : '') + ' onclick="App.page(' + (STATE.page + 1) + ')">›</button>';
+    pb.innerHTML = btns;
+  }
+
+  function render() { renderStats(); renderTable(); }
+
+  function toast(msg, kind) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (kind === 'err' ? ' err' : '');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  function openModal(kind) {
+    const m = document.getElementById('modal');
+    const c = document.getElementById('modal-content');
+    if (kind === 'calc') c.innerHTML = renderCalcModal();
+    else if (kind === 'comp') c.innerHTML = renderCompModal();
+    else if (kind === 'import') c.innerHTML = renderImportModal();
+    else if (kind === 'portals') c.innerHTML = renderPortalsModal();
+    else if (kind === 'settings') c.innerHTML = renderSettingsModal();
+    else if (kind === 'about') c.innerHTML = renderAboutModal();
+    m.classList.add('open');
+    if (kind === 'calc') runCalc();
+    if (kind === 'comp') { CMP_STATE = [{ a: '', p: 0, s: 0 }, { a: '', p: 0, s: 0 }, { a: '', p: 0, s: 0 }]; runComp(); }
+  }
+
+  function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+  function renderCalcModal() {
+    return '<div class="modal-h"><h3 class="modal-title">Deal Calculator</h3><button class="close" onclick="App.closeModal()">×</button></div>'
+      + '<div class="formgrid">'
+      + '<div class="field"><label>ARV (after repair value)</label><input type="number" id="c-arv" value="200000" oninput="App.runCalc()"/></div>'
+      + '<div class="field"><label>Estimated repairs</label><input type="number" id="c-rehab" value="35000" oninput="App.runCalc()"/></div>'
+      + '<div class="field"><label>Wholesale fee</label><input type="number" id="c-fee" value="10000" oninput="App.runCalc()"/></div>'
+      + '<div class="field"><label>Holding + closing %</label><input type="number" id="c-hold" value="3" step="0.5" oninput="App.runCalc()"/></div>'
+      + '<div class="field"><label>Strategy</label><select id="c-strat" onchange="App.runCalc()"><option value="70">70% rule (flip)</option><option value="75">75% rule (light flip)</option><option value="65">65% rule (heavy)</option><option value="80">80% rule (BRRRR)</option></select></div>'
+      + '<div class="field"><label>Asking price (optional)</label><input type="number" id="c-ask" value="" oninput="App.runCalc()"/></div>'
+      + '</div>'
+      + '<div class="results" id="c-out"></div>'
+      + '<p style="font-size:11px;color:var(--text-secondary);margin-top:8px;">MAO = (ARV × strategy %) − repairs − fee − holding. First-offer suggestion = MAO × 0.92.</p>';
+  }
+
+  function runCalc() {
+    const arv = +document.getElementById('c-arv').value || 0;
+    const rehab = +document.getElementById('c-rehab').value || 0;
+    const fee = +document.getElementById('c-fee').value || 0;
+    const holdPct = +document.getElementById('c-hold').value || 0;
+    const strat = +document.getElementById('c-strat').value || 70;
+    const ask = +document.getElementById('c-ask').value || 0;
+    const hold = arv * holdPct / 100;
+    const mao = Math.round(arv * strat / 100 - rehab - fee - hold);
+    const cashOffer = Math.round(mao * 0.92);
+    const spread = ask ? mao - ask : 0;
+    document.getElementById('c-out').innerHTML =
+      '<div class="result-row"><span>ARV</span><span>$' + arv.toLocaleString() + '</span></div>'
+      + '<div class="result-row"><span>Less repairs</span><span>−$' + rehab.toLocaleString() + '</span></div>'
+      + '<div class="result-row"><span>Less wholesale fee</span><span>−$' + fee.toLocaleString() + '</span></div>'
+      + '<div class="result-row"><span>Less holding/closing</span><span>−$' + Math.round(hold).toLocaleString() + '</span></div>'
+      + '<div class="result-row big"><span>MAO (' + strat + '% rule)</span><span style="color: var(--success);">$' + mao.toLocaleString() + '</span></div>'
+      + '<div class="result-row"><span>Suggested first offer</span><span>$' + cashOffer.toLocaleString() + '</span></div>'
+      + (ask ? '<div class="result-row"><span>Spread vs asking</span><span style="color:' + (spread >= 0 ? 'var(--success)' : 'var(--danger)') + ';">' + (spread >= 0 ? '+' : '') + '$' + spread.toLocaleString() + '</span></div>' : '');
+  }
+
+  let CMP_STATE = [{ a: '', p: 0, s: 0 }, { a: '', p: 0, s: 0 }, { a: '', p: 0, s: 0 }];
+
+  function renderCompModal() {
+    return '<div class="modal-h"><h3 class="modal-title">Comp Tool</h3><button class="close" onclick="App.closeModal()">×</button></div>'
+      + '<div class="formgrid"><div class="field"><label>Subject sqft</label><input type="number" id="cmp-sqft" value="1450" oninput="App.runComp()"/></div><div class="field"><label>Adjustment %</label><input type="number" id="cmp-adj" value="0" oninput="App.runComp()"/></div></div>'
+      + '<div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-weight:500;">Comparable sales</div>'
+      + '<div class="comprow" style="font-size:10px;color:var(--text-secondary);"><span>Address</span><span>Sale price</span><span>SqFt</span><span>$/sqft</span><span></span></div>'
+      + '<div id="cmp-list"></div>'
+      + '<button class="btn" onclick="App.compAdd()" style="margin-top:8px;">+ Add comp</button>'
+      + '<div class="results" id="cmp-out" style="margin-top:1rem;"></div>'
+      + '<p style="font-size:11px;color:var(--text-secondary);margin-top:8px;">Pull recent sales from <a href="https://nuecescad.net/Search/" target="_blank" rel="noopener" style="color:var(--brand);">Nueces CAD</a> or Zillow/Redfin within 0.5 mi, last 6 months.</p>';
+  }
+
+  function renderCmpRows() {
+    document.getElementById('cmp-list').innerHTML = CMP_STATE.map((c, i) => {
+      const ppsf = c.s > 0 ? Math.round(c.p / c.s) : 0;
+      return '<div class="comprow">'
+        + '<input value="' + escapeHtml(c.a || '') + '" placeholder="123 Main St" oninput="App.compUpd(' + i + ',\'a\',this.value)"/>'
+        + '<input type="number" value="' + (c.p || '') + '" placeholder="0" oninput="App.compUpd(' + i + ',\'p\',this.value)"/>'
+        + '<input type="number" value="' + (c.s || '') + '" placeholder="0" oninput="App.compUpd(' + i + ',\'s\',this.value)"/>'
+        + '<span style="font-size:12px;">' + (ppsf ? '$' + ppsf : '—') + '</span>'
+        + '<button class="comp-x" onclick="App.compDel(' + i + ')" title="Remove">×</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  function runComp() {
+    renderCmpRows();
+    const valid = CMP_STATE.filter(c => c.p > 0 && c.s > 0);
+    if (!valid.length) { document.getElementById('cmp-out').innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Add at least one comp.</div>'; return; }
+    const ppsfArr = valid.map(c => c.p / c.s);
+    const avg = ppsfArr.reduce((a, b) => a + b, 0) / ppsfArr.length;
+    const subj = +document.getElementById('cmp-sqft').value || 0;
+    const adj = (+document.getElementById('cmp-adj').value || 0) / 100;
+    const arv = Math.round(subj * avg * (1 + adj));
+    document.getElementById('cmp-out').innerHTML =
+      '<div class="result-row"><span>Comps used</span><span>' + valid.length + '</span></div>'
+      + '<div class="result-row"><span>Avg $/sqft</span><span>$' + Math.round(avg).toLocaleString() + '</span></div>'
+      + '<div class="result-row big"><span>Estimated ARV</span><span style="color:var(--success);">$' + arv.toLocaleString() + '</span></div>';
+  }
+
+  function renderImportModal() {
+    return '<div class="modal-h"><h3 class="modal-title">Import Lead List</h3><button class="close" onclick="App.closeModal()">×</button></div>'
+      + '<p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px;">Paste CSV, or upload a file. Columns: <code>owner, prop_addr, prop_city, prop_zip, mail_addr, mail_city, mail_zip, amount, doc_number, filed, est_value</code></p>'
+      + '<div class="field"><label>Lead type for this batch</label><select id="imp-type"><option value="tax">Tax delinquent</option><option value="lis_pendens">Lis Pendens</option><option value="foreclosure">Foreclosure / NTS</option><option value="probate">Probate</option><option value="lien">Lien</option><option value="judgment">Judgment</option><option value="code">Code violation</option><option value="absentee">Absentee owner</option></select></div>'
+      + '<div class="field" style="margin-top:12px;"><label>Upload CSV file</label><input type="file" id="imp-file" accept=".csv" onchange="App.importFile(event)"/></div>'
+      + '<div class="field" style="margin-top:12px;"><label>Or paste CSV content</label><textarea id="imp-csv" rows="8" placeholder="owner,prop_addr,prop_city,prop_zip,mail_addr,mail_city,mail_zip,amount,doc_number,filed&#10;SMITH JOHN,123 OAK ST,CORPUS CHRISTI,78404,P.O. BOX 99,DALLAS,75201,5400,TX-2024-001,2026-01-15"></textarea></div>'
+      + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="App.doImport()">Import & score</button><button class="btn" onclick="App.loadSample()">Load sample data</button></div>'
+      + '<p style="font-size:11px;color:var(--text-secondary);margin-top:8px;">Stack detection runs automatically — leads matching an existing property address get a STACKED flag and +15 score boost.</p>';
+  }
+
+  function importFile(ev) {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { document.getElementById('imp-csv').value = e.target.result; };
+    reader.readAsText(file);
+  }
+
+  // Robust CSV parser handling quoted fields with commas and escaped quotes
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"' && text[i+1] === '"') { field += '"'; i++; }
+        else if (ch === '"') { inQ = false; }
+        else { field += ch; }
+      } else {
+        if (ch === '"') { inQ = true; }
+        else if (ch === ',') { row.push(field); field = ''; }
+        else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+        else if (ch === '\r') {}
+        else { field += ch; }
+      }
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim()));
+  }
+
+  function doImport() {
+    const csv = document.getElementById('imp-csv').value.trim();
+    const type = document.getElementById('imp-type').value;
+    if (!csv) { toast('Paste CSV or upload a file first', 'err'); return; }
+    const rows = parseCSV(csv);
+    if (rows.length < 2) { toast('CSV needs a header row + at least one data row', 'err'); return; }
+    const headers = rows[0].map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
+    let added = 0, stacked = 0;
+    const existingAddrs = new Set(STATE.leads.map(L => (L.prop_addr || '').trim().toLowerCase()).filter(Boolean));
+    for (let i = 1; i < rows.length; i++) {
+      const cells = rows[i].map(c => c.trim());
+      if (cells.every(c => !c)) continue;
+      const obj = {};
+      headers.forEach((h, idx) => obj[h] = cells[idx] || '');
+      const addr = (obj.prop_addr || '').trim().toLowerCase();
+      const isStack = addr && existingAddrs.has(addr);
+      const flags = [];
+      if (isStack) { flags.push('STACKED'); stacked++; }
+      if (obj.prop_addr && obj.mail_addr && obj.prop_addr.trim().toLowerCase() !== obj.mail_addr.trim().toLowerCase()) flags.push('Absentee');
+      if (type === 'tax') flags.push('Tax delinquent');
+      if (/llc|corp|inc|ltd|trust/i.test(obj.owner || '')) flags.push('LLC / corp owner');
+      const L = {
+        id: 'i' + Date.now() + '-' + i,
+        type,
+        doc: type === 'tax' ? 'TAX' : type === 'lis_pendens' ? 'L/P' : type === 'foreclosure' ? 'NTS' : type === 'probate' ? 'PROB' : 'DOC',
+        doc_number: obj.doc_number || '',
+        filed: obj.filed || new Date().toISOString().slice(0, 10),
+        owner: obj.owner || '',
+        prop_addr: obj.prop_addr || '',
+        prop_city: obj.prop_city || STATE.settings.defaultMarket,
+        prop_zip: obj.prop_zip || '',
+        mail_addr: obj.mail_addr || '',
+        mail_city: obj.mail_city || '',
+        mail_zip: obj.mail_zip || '',
+        amount: +obj.amount || 0,
+        est_value: +obj.est_value || 0,
+        flags
+      };
+      L.score = calcScore(L);
+      STATE.leads.push(L);
+      if (addr) existingAddrs.add(addr);
+      added++;
+    }
+    save(); render(); closeModal();
+    toast('Imported ' + added + ' leads (' + stacked + ' stacked)');
+  }
+
+  function loadSample() {
+    document.getElementById('imp-csv').value = 'owner,prop_addr,prop_city,prop_zip,mail_addr,mail_city,mail_zip,amount,doc_number,filed\nRAMIREZ ELENA,1822 PALM DR,CORPUS CHRISTI,78411,1822 PALM DR,CORPUS CHRISTI,78411,4200,TX-2024-8821,2026-01-22\nNGUYEN TRAN ESTATE,4477 GOLLIHAR RD,CORPUS CHRISTI,78415,9921 BISSONNET ST,HOUSTON,77036,11800,TX-2023-4412,2026-02-08\nBLUE STAR HOLDINGS LLC,3308 STAPLES ST,CORPUS CHRISTI,78411,P.O. BOX 4421,SAN ANTONIO,78201,7250,TX-2024-9912,2026-03-04';
+  }
+
+  function renderPortalsModal() {
+    const portals = [
+      { name: 'Nueces County Clerk', status: 'semi', url: 'https://nueces.tx.publicsearch.us/', note: 'Manual search → CSV export → import here. Search "Notice of Trustee Sale", "Lis Pendens", "Affidavit of Heirship".' },
+      { name: 'Nueces CAD Property Search', status: 'semi', url: 'https://nuecescad.net/Search/', note: 'Free search. Filter absentee owners by mailing zip mismatch.' },
+      { name: 'Nueces CAD Portal', status: 'semi', url: 'https://portal.nuecescad.net/', note: 'Login required, more detailed records.' },
+      { name: 'TaxNetUSA (paid)', status: 'auto', url: 'https://www.taxnetusa.com/texas/nueces/', note: 'Subscription = bulk CSV export. Fastest path to volume.' },
+      { name: 'Tax Assessor / Collector', status: 'manual', url: 'https://www.nuecesco.com/departments/tax-assessor-collector', note: 'Delinquent list = PIA request (template below).' },
+      { name: 'County Foreclosures', status: 'semi', url: 'https://www.thecountyoffice.com/nueces-county-tx-foreclosures-and-tax-lien-sales-search/', note: 'Public list, manual scrape into CSV.' },
+      { name: 'Nueces Records (Probate)', status: 'manual', url: 'https://nuecesrecords.org/', note: 'District Clerk lookup, case-by-case.' },
+      { name: 'CC Code Enforcement', status: 'manual', url: 'https://www.cctexas.com/departments/code-enforcement', note: 'Open records request required.' }
+    ];
+    return '<div class="modal-h"><h3 class="modal-title">Data Portals</h3><button class="close" onclick="App.closeModal()">×</button></div>'
+      + '<p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px;"><span class="portal-status portal-auto">AUTO</span> = subscription/API · <span class="portal-status portal-semi">SEMI</span> = manual export → import · <span class="portal-status portal-manual">MANUAL</span> = open-records request</p>'
+      + '<div class="portals">'
+      + portals.map(p => '<div class="portal"><div class="portal-h"><span class="portal-name">' + p.name + '</span><span class="portal-status portal-' + p.status + '">' + p.status.toUpperCase() + '</span></div><div style="color:var(--text-secondary);font-size:11px;margin-bottom:6px;">' + p.note + '</div><a href="' + p.url + '" target="_blank" rel="noopener">Open ↗</a></div>').join('')
+      + '</div>'
+      + '<div class="pia-template"><strong>PIA email template</strong> for tax delinquent / code violations:<br/><br/>To: <em>publicrecords@nuecesco.com</em> · <em>cityrecords@cctexas.com</em><br/><br/>"Pursuant to the Texas Public Information Act, I request: [delinquent tax roll with owner name, mailing address, parcel ID, amount owed, and years delinquent] in CSV or Excel format. I am willing to pay reasonable copying fees up to $25."</div>';
+  }
+
+  function renderSettingsModal() {
+    return '<div class="modal-h"><h3 class="modal-title">Settings</h3><button class="close" onclick="App.closeModal()">×</button></div>'
+      + '<div class="field"><label>Default market (city)</label><input type="text" id="set-market" value="' + escapeHtml(STATE.settings.defaultMarket) + '"/></div>'
+      + '<div class="field" style="margin-top:12px;"><label>Restore from backup CSV</label><input type="file" id="set-restore" accept=".csv,.json" onchange="App.restoreBackup(event)"/></div>'
+      + '<div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;">'
+      + '<button class="btn btn-primary" onclick="App.saveSettings()">Save settings</button>'
+      + '<button class="btn btn-danger" onclick="App.clearAll()">Clear all leads</button>'
+      + '</div>'
+      + '<p style="font-size:11px;color:var(--text-secondary);margin-top:1rem;">All data is stored in your browser via localStorage. Use Full Backup to export before clearing browser data. Storage limit ≈ 5MB (~10,000 leads).</p>';
+  }
+
+  function renderAboutModal() {
+    return '<div class="modal-h"><h3 class="modal-title">About</h3><button class="close" onclick="App.closeModal()">×</button></div>'
+      + '<div style="font-size:13px;line-height:1.6;">'
+      + '<p><strong>Texas Property Intel</strong> is a static, browser-based dashboard for tracking motivated seller leads in Nueces County, TX.</p>'
+      + '<p><strong>How it works:</strong></p>'
+      + '<ol style="padding-left:1.2rem;">'
+      + '<li>Pull lead lists from county portals (manual or subscription).</li>'
+      + '<li>Import them via CSV → auto-scored 0–100 based on lead type, equity, distress signals.</li>'
+      + '<li>Stacking detects properties showing up on multiple lists = highest motivation.</li>'
+      + '<li>Use Comp Tool + Calculator to underwrite. Export to skip-trace or GHL.</li>'
+      + '</ol>'
+      + '<p><strong>Limits:</strong> No backend. No live scraping. No cross-device sync. All data lives in your browser.</p>'
+      + '<p><strong>Hosted on:</strong> GitHub Pages (free, static).</p>'
+      + '</div>';
+  }
+
+  function exportCSV(kind) {
+    const data = kind === 'all' ? STATE.leads.slice() : getFiltered();
+    if (!data.length) { toast('No leads to export', 'err'); return; }
+    let headers, rows;
+    if (kind === 'skip') {
+      headers = ['first_name', 'last_name', 'address', 'city', 'state', 'zip', 'mailing_address', 'mailing_city', 'mailing_state', 'mailing_zip'];
+      rows = data.map(L => {
+        const parts = (L.owner || '').split(/\s+/);
+        return [parts.slice(1).join(' '), parts[0] || '', L.prop_addr || '', L.prop_city || '', 'TX', L.prop_zip || '', L.mail_addr || '', L.mail_city || '', 'TX', L.mail_zip || ''];
+      });
+    } else if (kind === 'ghl') {
+      headers = ['firstName', 'lastName', 'address1', 'city', 'state', 'postalCode', 'tags', 'source', 'customField.score', 'customField.lead_type', 'customField.amount', 'customField.doc_number'];
+      rows = data.map(L => {
+        const parts = (L.owner || '').split(/\s+/);
+        return [parts.slice(1).join(' '), parts[0] || '', L.prop_addr || '', L.prop_city || '', 'TX', L.prop_zip || '', (L.flags || []).join('|'), 'TPI', L.score, L.type, L.amount || '', L.doc_number || ''];
+      });
+    } else {
+      headers = ['id', 'type', 'doc', 'doc_number', 'filed', 'owner', 'prop_addr', 'prop_city', 'prop_zip', 'mail_addr', 'mail_city', 'mail_zip', 'amount', 'est_value', 'score', 'flags'];
+      rows = data.map(L => [L.id, L.type, L.doc, L.doc_number, L.filed, L.owner, L.prop_addr, L.prop_city, L.prop_zip, L.mail_addr, L.mail_city, L.mail_zip, L.amount, L.est_value, L.score, (L.flags || []).join('|')]);
+    }
+    const csv = [headers.join(','), ...rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tpi_' + kind + '_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Exported ' + data.length + ' leads as ' + kind.toUpperCase() + ' CSV');
+  }
+
+  function restoreBackup(ev) {
+    const file = ev.target.files[0];
+    if (!file) return;
+    if (!confirm('Restore will MERGE with existing data. Continue?')) { ev.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const text = e.target.result;
+        const rows = parseCSV(text);
+        if (rows.length < 2) { toast('Backup file has no data', 'err'); return; }
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        let added = 0;
+        for (let i = 1; i < rows.length; i++) {
+          const cells = rows[i];
+          if (cells.every(c => !c.trim())) continue;
+          const obj = {};
+          headers.forEach((h, idx) => obj[h] = cells[idx] || '');
+          const L = {
+            id: obj.id || 'r' + Date.now() + '-' + i,
+            type: obj.type || 'lien',
+            doc: obj.doc || 'DOC',
+            doc_number: obj.doc_number || '',
+            filed: obj.filed || '',
+            owner: obj.owner || '',
+            prop_addr: obj.prop_addr || '',
+            prop_city: obj.prop_city || '',
+            prop_zip: obj.prop_zip || '',
+            mail_addr: obj.mail_addr || '',
+            mail_city: obj.mail_city || '',
+            mail_zip: obj.mail_zip || '',
+            amount: +obj.amount || 0,
+            est_value: +obj.est_value || 0,
+            flags: (obj.flags || '').split('|').filter(Boolean)
+          };
+          L.score = +obj.score || calcScore(L);
+          STATE.leads.push(L);
+          added++;
+        }
+        save(); render(); closeModal();
+        toast('Restored ' + added + ' leads');
+      } catch (err) {
+        toast('Restore failed: ' + err.message, 'err');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function saveSettings() {
+    STATE.settings.defaultMarket = document.getElementById('set-market').value || 'CORPUS CHRISTI';
+    save();
+    closeModal();
+    toast('Settings saved');
+  }
+
+  function clearAll() {
+    if (!confirm('Clear ALL leads? This cannot be undone. Export a backup first if you want to keep them.')) return;
+    STATE.leads = [];
+    save(); render(); closeModal();
+    toast('All leads cleared');
+  }
+
+  function filter(kind, val) {
+    if (kind === 'type') STATE.filterType = val;
+    if (kind === 'score') STATE.filterScore = val;
+    document.querySelectorAll('.side-item').forEach(el => {
+      if (kind === 'type' && el.dataset.type) el.classList.toggle('active', el.dataset.type === val);
+      if (kind === 'score' && el.dataset.score) el.classList.toggle('active', el.dataset.score === val);
+    });
+    STATE.page = 1;
+    renderTable();
+  }
+
+  function page(p) { STATE.page = p; renderTable(); }
+
+  function init() {
+    load();
+    render();
+    document.getElementById('search').addEventListener('input', () => { STATE.page = 1; renderTable(); });
+    document.getElementById('sort').addEventListener('change', renderTable);
+    document.getElementById('pagesize').addEventListener('change', () => { STATE.page = 1; renderTable(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  }
+
+  return {
+    init, openModal, closeModal, filter, page,
+    runCalc, runComp, compAdd: () => { CMP_STATE.push({ a: '', p: 0, s: 0 }); runComp(); },
+    compDel: i => { CMP_STATE.splice(i, 1); runComp(); },
+    compUpd: (i, k, v) => { CMP_STATE[i][k] = k === 'a' ? v : (+v || 0); runComp(); },
+    importFile, doImport, loadSample, exportCSV, restoreBackup, saveSettings, clearAll
+  };
+})();
+
+document.addEventListener('DOMContentLoaded', App.init);
+</script>
+</body>
+</html>
